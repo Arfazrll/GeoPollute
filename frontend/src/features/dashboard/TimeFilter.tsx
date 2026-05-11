@@ -11,15 +11,15 @@ export function TimeFilter() {
   const { filter, setFilter } = useFilterStore();
 
   return (
-    <div className="flex gap-2">
+    <div className="flex gap-3">
       {OPTIONS.map((opt) => (
         <button
           key={opt.value}
           onClick={() => setFilter(opt.value)}
-          className={`px-3 py-1.5 text-xs rounded border transition ${
+          className={`px-4 py-2 text-[10px] font-bold rounded-lg transition-all duration-300 ${
             filter === opt.value
-              ? 'bg-white text-black border-white'
-              : 'bg-transparent text-white border-white/30 hover:border-white/60'
+              ? 'bg-blue-500/20 text-blue-400 border border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+              : 'glass-button text-white/70 border-white/5'
           }`}
         >
           [ {opt.label} ]

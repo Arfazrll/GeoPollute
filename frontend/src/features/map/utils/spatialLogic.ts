@@ -1,14 +1,14 @@
-export const IDW_CELL_SIZE_KM = 0.5;
+export const IDW_CELL_SIZE_KM = 0.8;
 export const IDW_WEIGHT = 2;
 export const IDW_UNITS = 'kilometers' as const;
 
 export const AQI_COLOR_STOPS: Array<[number, string]> = [
-  [0, '#00E400'],
-  [12, '#FFFF00'],
-  [35, '#FF7E00'],
-  [55, '#FF0000'],
-  [150, '#8F3F97'],
-  [250, '#7E0023'],
+  [0, '#22c55e'],   // Green-500
+  [12, '#eab308'],  // Yellow-500
+  [35, '#f97316'],  // Orange-500
+  [55, '#ef4444'],  // Red-500
+  [150, '#a855f7'], // Purple-500
+  [250, '#701a75'], // Fuchsia-900
 ];
 
 export const AQI_CATEGORY = (pm25: number): string => {

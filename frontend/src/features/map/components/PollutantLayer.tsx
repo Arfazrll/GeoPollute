@@ -21,7 +21,7 @@ export function PollutantLayer({ featureLayer, map }: Props) {
     if (!grid) return;
 
     const features = (grid as any).features;
-    const opacity = isError ? 0.3 : 0.6;
+    const opacity = isError ? 0.4 : 0.7;
 
     if (!polygonRef.current) {
       polygonRef.current = featureLayer
