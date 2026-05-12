@@ -2,28 +2,33 @@ package main
 
 import (
 	"context"
-	"log/slog"
+	"errors"
+	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/arfazrll/geopollute/api/internal/config"
 	"github.com/arfazrll/geopollute/api/internal/db"
+	"github.com/arfazrll/geopollute/api/internal/handler"
+	"github.com/arfazrll/geopollute/api/internal/repository"
+	"github.com/arfazrll/geopollute/api/internal/service"
 	"github.com/arfazrll/geopollute/api/pkg/logger"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
-	// ---- Layer 2: Config + Logger ----
+	// ---- Config + Logger ----
 	cfg, err := config.Load()
 	if err != nil {
-		// Logger gak ke-init yet, pakai stderr biasa
 		os.Stderr.WriteString("failed to load config: " + err.Error() + "\n")
 		os.Exit(1)
 	}
 
 	log := logger.New(cfg.LogLevel, cfg.IsDev())
-	log.Info("✓ Config loaded", "api_addr", cfg.Addr())
+	log.Info("starting API server", "addr", cfg.Addr(), "mode", cfg.GinMode)
 
-	// ---- Layer 3: Database Pool ----
+	// ---- Database Pool ----
 	ctx := context.Background()
 	pool, err := db.NewPool(ctx, cfg.DatabaseURL, db.DefaultPoolConfig(), log)
 	if err != nil {
@@ -32,61 +37,56 @@ func main() {
 	}
 	defer pool.Close()
 
-	// Smoke tests
-	if err := smokeTest(ctx, pool, log); err != nil {
-		log.Error("smoke test failed", "error", err)
+	// ---- Repository Layer ----
+	pollutantRepo := repository.NewPollutantRepository(pool)
+	sensorRepo := repository.NewSensorRepository(pool)
+
+	// ---- Service Layer ----
+	pollutantService := service.NewPollutantService(pollutantRepo, sensorRepo)
+	sensorService := service.NewSensorService(sensorRepo)
+
+	// ---- Handler Layer (Router) ----
+	router := handler.NewRouter(&handler.Dependencies{
+		Pool:             pool,
+		Config:           cfg,
+		Logger:           log,
+		PollutantService: pollutantService,
+		SensorService:    sensorService,
+	})
+
+	// ---- HTTP Server with graceful shutdown ----
+	srv := &http.Server{
+		Addr:         cfg.Addr(),
+		Handler:      router,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	// Start server in goroutine
+	go func() {
+		log.Info("✓ API listening", "addr", cfg.Addr())
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Error("server error", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	log.Info("shutting down server...")
+
+	// Graceful shutdown with 30s timeout
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Error("server shutdown error", "error", err)
 		os.Exit(1)
 	}
 
-	// Log pool stats
-	db.LogPoolStats(pool, log)
-
-	log.Info("Layer 3 setup complete — ready for Layer 4 (Models)")
-}
-
-// smokeTest verifies the database schema by querying expected tables.
-func smokeTest(ctx context.Context, pool *pgxpool.Pool, log *slog.Logger) error {
-	// Test 1: Postgres version
-	var version string
-	if err := pool.QueryRow(ctx, "SELECT version()").Scan(&version); err != nil {
-		return err
-	}
-	displayVer := version
-	if len(version) > 60 {
-		displayVer = version[:60] + "..."
-	}
-	log.Info("✓ Postgres version", "value", displayVer)
-
-	// Test 2: Count sensors
-	var sensorCount int
-	if err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM sensors").Scan(&sensorCount); err != nil {
-		return err
-	}
-	log.Info("✓ Sensors table accessible", "count", sensorCount)
-
-	// Test 3: Count readings
-	var readingCount int
-	if err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM pollutant_readings").Scan(&readingCount); err != nil {
-		return err
-	}
-	log.Info("✓ Readings table accessible", "count", readingCount)
-
-	// Test 4: Aggregates
-	var hourlyCount, dailyCount int
-	if err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM pollutant_aggregates_hourly").Scan(&hourlyCount); err != nil {
-		return err
-	}
-	if err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM pollutant_aggregates_daily").Scan(&dailyCount); err != nil {
-		return err
-	}
-	log.Info("✓ Aggregates accessible", "hourly", hourlyCount, "daily", dailyCount)
-
-	// Test 5: Sensor status
-	var statusCount int
-	if err := pool.QueryRow(ctx, "SELECT COUNT(*) FROM sensor_status").Scan(&statusCount); err != nil {
-		return err
-	}
-	log.Info("✓ Sensor status accessible", "count", statusCount)
-
-	return nil
+	log.Info("✓ Server stopped gracefully")
 }
