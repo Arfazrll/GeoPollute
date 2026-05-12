@@ -12,12 +12,9 @@ type pollutantRepo struct {
 	pool *pgxpool.Pool
 }
 
-// NewPollutantRepository creates a new pollutant repository.
 func NewPollutantRepository(pool *pgxpool.Pool) PollutantRepository {
 	return &pollutantRepo{pool: pool}
 }
-
-// SQL queries sesuai PRD section 5.2 step 3.
 
 const queryCurrentReadings = `
 	SELECT DISTINCT ON (s.id)
@@ -43,7 +40,7 @@ const queryHourlyAggregates = `
 		a.hour_bucket
 	FROM sensors s
 	JOIN pollutant_aggregates_hourly a ON a.sensor_id = s.id
-	WHERE a.hour_bucket > NOW() - INTERVAL '2 hours'
+	WHERE a.hour_bucket > NOW() - INTERVAL '25 hours'
 	  AND a.pollutant_type = $1
 	  AND s.active = TRUE
 	ORDER BY s.id, a.hour_bucket DESC;
@@ -69,23 +66,18 @@ const queryInsertReading = `
 	VALUES ($1, $2, $3, $4);
 `
 
-// GetCurrentReadings: filter "2m"
 func (r *pollutantRepo) GetCurrentReadings(ctx context.Context, pollutantType model.PollutantType) ([]model.SensorReadingDTO, error) {
 	return r.fetchReadings(ctx, queryCurrentReadings, pollutantType)
 }
 
-// GetHourlyAggregates: filter "1h"
 func (r *pollutantRepo) GetHourlyAggregates(ctx context.Context, pollutantType model.PollutantType) ([]model.SensorReadingDTO, error) {
 	return r.fetchReadings(ctx, queryHourlyAggregates, pollutantType)
 }
 
-// GetDailyAggregates: filter "1d"
 func (r *pollutantRepo) GetDailyAggregates(ctx context.Context, pollutantType model.PollutantType) ([]model.SensorReadingDTO, error) {
 	return r.fetchReadings(ctx, queryDailyAggregates, pollutantType)
 }
 
-// fetchReadings is the shared scanner for all three filter queries.
-// Returns SensorReadingDTO (frontend-compatible format).
 func (r *pollutantRepo) fetchReadings(ctx context.Context, query string, pollutantType model.PollutantType) ([]model.SensorReadingDTO, error) {
 	rows, err := r.pool.Query(ctx, query, pollutantType)
 	if err != nil {

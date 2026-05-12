@@ -8,17 +8,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// PollutantHandler handles pollutant data endpoints.
 type PollutantHandler struct {
 	service *service.PollutantService
 }
 
-// NewPollutantHandler creates a new pollutant handler.
 func NewPollutantHandler(s *service.PollutantService) *PollutantHandler {
 	return &PollutantHandler{service: s}
 }
 
-// GetPollutants handles GET /pollutants?filter={2m|1h|1d}
 func (h *PollutantHandler) GetPollutants(c *gin.Context) {
 	filterStr := c.DefaultQuery("filter", "2m")
 	filter := model.FilterMode(filterStr)

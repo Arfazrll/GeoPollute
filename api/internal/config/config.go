@@ -10,38 +10,35 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config holds all application configuration.
 type Config struct {
-	// Server
 	APIHost string
 	APIPort int
 	GinMode string
 
-	// Database
 	DatabaseURL string
 
-	// CORS
 	CORSAllowedOrigins []string
 
-	// Logging
 	LogLevel string
 }
 
-// Load reads config from environment variables.
-// If a .env file exists in working dir, it loads from there first.
+
 func Load() (*Config, error) {
-	// Try load .env (no error if file doesn't exist — production uses real env)
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		APIHost:            getEnv("API_HOST", "0.0.0.0"),
+		APIHost:            getEnv("API_HOST", ""),
 		GinMode:            getEnv("GIN_MODE", "debug"),
 		DatabaseURL:        getEnv("DATABASE_URL", ""),
-		CORSAllowedOrigins: parseCSV(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:5173")),
+		CORSAllowedOrigins: parseCSV(getEnv("CORS_ALLOWED_ORIGINS", "")),
 		LogLevel:           getEnv("LOG_LEVEL", "info"),
 	}
 
-	port, err := strconv.Atoi(getEnv("API_PORT", "8080"))
+	portStr := getEnv("API_PORT", "")
+	if portStr == "" {
+		return nil, errors.New("API_PORT is required")
+	}
+	port, err := strconv.Atoi(portStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid API_PORT: %w", err)
 	}
@@ -54,10 +51,13 @@ func Load() (*Config, error) {
 	return cfg, nil
 }
 
-// validate ensures critical fields are present.
+
 func (c *Config) validate() error {
 	if c.DatabaseURL == "" {
 		return errors.New("DATABASE_URL is required")
+	}
+	if c.APIHost == "" {
+		return errors.New("API_HOST is required")
 	}
 	if c.APIPort < 1 || c.APIPort > 65535 {
 		return fmt.Errorf("API_PORT out of range: %d", c.APIPort)
@@ -68,17 +68,13 @@ func (c *Config) validate() error {
 	return nil
 }
 
-// IsDev returns true if running in development mode.
 func (c *Config) IsDev() bool {
 	return strings.ToLower(c.GinMode) == "debug"
 }
 
-// Addr returns the server address in "host:port" format.
 func (c *Config) Addr() string {
 	return fmt.Sprintf("%s:%d", c.APIHost, c.APIPort)
 }
-
-// Helpers
 
 func getEnv(key, fallback string) string {
 	if v := os.Getenv(key); v != "" {
@@ -86,6 +82,8 @@ func getEnv(key, fallback string) string {
 	}
 	return fallback
 }
+
+
 
 func parseCSV(s string) []string {
 	if s == "" {

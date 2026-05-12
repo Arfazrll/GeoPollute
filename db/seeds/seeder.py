@@ -20,10 +20,16 @@ except ImportError:
     sys.exit(1)
 
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgres://postgres:changeme123@localhost:5432/pollutant_db",
-)
+from dotenv import load_dotenv
+
+# Load .env from root or current dir
+load_dotenv(Path(__file__).parents[2] / ".env")
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    print("ERROR: DATABASE_URL environment variable is not set.")
+    sys.exit(1)
 
 SENSORS = [f"S-{i:02d}" for i in range(1, 16)]
 INTERVAL_SECONDS = 120

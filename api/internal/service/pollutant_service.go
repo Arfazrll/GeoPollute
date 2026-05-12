@@ -8,7 +8,6 @@ import (
 	"github.com/arfazrll/geopollute/api/internal/repository"
 )
 
-// PollutantService handles business logic for pollutant data.
 type PollutantService struct {
 	pollutantRepo repository.PollutantRepository
 	sensorRepo    repository.SensorRepository
@@ -22,7 +21,6 @@ func NewPollutantService(p repository.PollutantRepository, s repository.SensorRe
 	}
 }
 
-// GetReadingsByFilter routes filter param to the correct repository method.
 func (s *PollutantService) GetReadingsByFilter(ctx context.Context, filter model.FilterMode) (*model.PollutantResponse, error) {
 	if !filter.IsValid() {
 		return nil, model.ErrInvalidFilter
@@ -58,8 +56,6 @@ func (s *PollutantService) GetReadingsByFilter(ctx context.Context, filter model
 	}, nil
 }
 
-// IngestReading inserts a new reading AND updates sensor status.
-// This is a transactional concern handled at service level.
 func (s *PollutantService) IngestReading(ctx context.Context, req *model.IngestRequest) error {
 	if err := req.Validate(); err != nil {
 		return err
@@ -76,9 +72,7 @@ func (s *PollutantService) IngestReading(ctx context.Context, req *model.IngestR
 		return fmt.Errorf("insert reading: %w", err)
 	}
 
-	// Update sensor status (last_seen_at, online=true)
 	if err := s.sensorRepo.UpsertSensorStatus(ctx, req.SensorID); err != nil {
-		// Non-fatal: log it but don't fail the ingest
 		return fmt.Errorf("upsert status (non-fatal): %w", err)
 	}
 

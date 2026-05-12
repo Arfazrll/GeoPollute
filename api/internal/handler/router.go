@@ -9,7 +9,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Dependencies holds all dependencies needed by handlers.
 type Dependencies struct {
 	Pool             *pgxpool.Pool
 	Config           *config.Config
@@ -18,7 +17,6 @@ type Dependencies struct {
 	SensorService    *service.SensorService
 }
 
-// NewRouter creates and configures the HTTP router with all routes and middleware.
 func NewRouter(deps *Dependencies) *gin.Engine {
 	if deps.Config.IsDev() {
 		gin.SetMode(gin.DebugMode)
@@ -28,19 +26,16 @@ func NewRouter(deps *Dependencies) *gin.Engine {
 
 	r := gin.New()
 
-	// Global middleware
 	r.Use(RecoveryMiddleware(deps.Logger))
 	r.Use(RequestIDMiddleware())
 	r.Use(LoggerMiddleware(deps.Logger))
 	r.Use(CORSMiddleware(deps.Config.CORSAllowedOrigins))
 
-	// Handlers
 	healthH := NewHealthHandler(deps.Pool)
 	pollutantH := NewPollutantHandler(deps.PollutantService)
 	ingestH := NewIngestHandler(deps.PollutantService)
 	sensorH := NewSensorHandler(deps.SensorService)
 
-	// Routes
 	r.GET("/health", healthH.Check)
 	r.GET("/pollutants", pollutantH.GetPollutants)
 	r.POST("/ingest", ingestH.Ingest)

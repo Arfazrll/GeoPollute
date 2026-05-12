@@ -18,7 +18,6 @@ import (
 )
 
 func main() {
-	// ---- Config + Logger ----
 	cfg, err := config.Load()
 	if err != nil {
 		os.Stderr.WriteString("failed to load config: " + err.Error() + "\n")
@@ -28,7 +27,6 @@ func main() {
 	log := logger.New(cfg.LogLevel, cfg.IsDev())
 	log.Info("starting API server", "addr", cfg.Addr(), "mode", cfg.GinMode)
 
-	// ---- Database Pool ----
 	ctx := context.Background()
 	pool, err := db.NewPool(ctx, cfg.DatabaseURL, db.DefaultPoolConfig(), log)
 	if err != nil {
@@ -37,15 +35,12 @@ func main() {
 	}
 	defer pool.Close()
 
-	// ---- Repository Layer ----
 	pollutantRepo := repository.NewPollutantRepository(pool)
 	sensorRepo := repository.NewSensorRepository(pool)
 
-	// ---- Service Layer ----
 	pollutantService := service.NewPollutantService(pollutantRepo, sensorRepo)
 	sensorService := service.NewSensorService(sensorRepo)
 
-	// ---- Handler Layer (Router) ----
 	router := handler.NewRouter(&handler.Dependencies{
 		Pool:             pool,
 		Config:           cfg,
@@ -54,7 +49,6 @@ func main() {
 		SensorService:    sensorService,
 	})
 
-	// ---- HTTP Server with graceful shutdown ----
 	srv := &http.Server{
 		Addr:         cfg.Addr(),
 		Handler:      router,
@@ -63,7 +57,6 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Start server in goroutine
 	go func() {
 		log.Info("✓ API listening", "addr", cfg.Addr())
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -72,7 +65,6 @@ func main() {
 		}
 	}()
 
-	// Wait for interrupt signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	<-quit
@@ -88,5 +80,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Info("✓ Server stopped gracefully")
+	log.Info("Server stopped")
 }
