@@ -1,0 +1,19 @@
+# Static configuration
+api:
+  dashboard: true
+  insecure: true  # only for development; use https in production
+
+entryPoints:
+  web:
+    address: ":80"
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: geopollute-net
+
+log:
+  level: INFO
+
+accessLog: {}
