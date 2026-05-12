@@ -14,16 +14,15 @@ interface PopupState {
   screenY: number;
 }
 
-// Simple Sparkline component using SVG
 function Sparkline({ data }: { data: number[] }) {
   const width = 120;
   const height = 30;
   const padding = 2;
-  
+
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
-  
+
   const points = data.map((val, i) => {
     const x = (i / (data.length - 1)) * (width - 2 * padding) + padding;
     const y = height - ((val - min) / range) * (height - 2 * padding) - padding;
@@ -82,9 +81,8 @@ export function PopupDetail({ map, pointFeature }: Props) {
   if (!popup) return null;
 
   const { sensor, screenX, screenY } = popup;
-  
-  // Generate some mock historical data for the sparkline
-  const mockHistory = Array.from({ length: 12 }, () => 
+
+  const mockHistory = Array.from({ length: 12 }, () =>
     sensor.pm25 + (Math.random() - 0.5) * 10
   );
 
@@ -98,9 +96,8 @@ export function PopupDetail({ map, pointFeature }: Props) {
       }}
     >
       <div className="glass text-white p-4 rounded-xl shadow-2xl min-w-[220px] pointer-events-auto relative">
-        {/* Pointer arrow */}
         <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 glass border-t-0 border-l-0" />
-        
+
         <div className="flex justify-between items-center mb-3">
           <span className="text-[10px] font-bold tracking-widest text-white/40 uppercase">
             Sensor ID: {sensor.id}
