@@ -2,7 +2,7 @@ import type { FilterMode, PollutantResponse } from '@/types';
 import mockData from '@/mocks/sensors.json';
 
 const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
-const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_BASE || '';
 
 export async function fetchPollutantData(filter: FilterMode): Promise<PollutantResponse> {
   if (USE_MOCK) {
