@@ -1,8 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MapContainer } from '@/features/map/components/MapContainer';
-import { Sidebar } from '@/features/dashboard/Sidebar';
 import { Legend } from '@/features/dashboard/Legend';
-
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -10,15 +8,11 @@ const queryClient = new QueryClient({
     },
   },
 });
-
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="w-screen h-screen relative">
         <MapContainer />
-        <div className="absolute top-4 left-4 z-10">
-          <Sidebar />
-        </div>
         <div className="absolute bottom-4 right-4 z-10">
           <Legend />
         </div>
