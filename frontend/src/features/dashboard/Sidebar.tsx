@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from 'react'; 
 import { useFilterStore } from '@/store/useFilterStore';
 import { usePollutantData } from '@/features/map/hooks/usePollutantData';
 import { TimeFilter } from './TimeFilter';
@@ -17,13 +17,13 @@ export function Sidebar({ onNavigate }: Props) {
   const statusText = isError
     ? 'Connection lost — showing cached data'
     : isFetching
-    ? 'Refreshing...'
-    : filter === '2m'
-    ? 'Data Auto-refresh Active (Next in 92 seconds)'
-    : 'Aggregated data';
+      ? 'Refreshing...'
+      : filter === '2m'
+        ? 'Data Auto-refresh Active (Next in 92 seconds)'
+        : 'Aggregated data';
   return (
     <div className="relative group h-[calc(100vh-2rem)] flex flex-col">
-      {}
+      { }
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -33,13 +33,14 @@ export function Sidebar({ onNavigate }: Props) {
           <PanelLeftOpen className="w-5 h-5" />
         </button>
       )}
-      {}
+      { }
       <div
-        className={`glass text-slate-900 rounded-2xl min-w-[340px] max-w-[340px] h-full shadow-2xl transition-all duration-500 ease-in-out transform origin-top-left flex flex-col ${
-          isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none translate-x-[-20px]'
-        }`}
+        className={`glass text-slate-900 rounded-2xl min-w-[340px] max-w-[340px] h-full shadow-2xl transition-all duration-500 ease-in-out transform origin-top-left flex flex-col ${isOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none translate-x-[-20px]'
+          }`}
       >
-        {}
+
+
+        { }
         <div className="p-5 border-b border-slate-100 flex justify-between items-start bg-white/50 backdrop-blur-sm rounded-t-2xl">
           <div className="flex flex-col">
             <div className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400">
@@ -57,7 +58,7 @@ export function Sidebar({ onNavigate }: Props) {
             <PanelLeftClose className="w-5 h-5" />
           </button>
         </div>
-        {}
+        { }
         <div className="flex-1 overflow-y-auto custom-scrollbar px-5 pt-5 pb-12 space-y-6">
           <div>
             <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-3">
