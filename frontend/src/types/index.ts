@@ -37,9 +37,9 @@ export interface GeoJSFeature {
   position: (callback: (d: any) => { x: number; y: number; z: number }) => GeoJSFeature;
   style: (styleOrCallback: any, value?: any) => GeoJSFeature;
   draw: () => void;
-  polygon?: (callback: (d: any) => { outer: number[][]; inner?: number[][] }) => GeoJSFeature;
-  line?: (callback: (d: any) => number[][]) => GeoJSFeature;
-  intensity?: (callback: (d: any) => number) => GeoJSFeature;
+  polygon: (callback: (d: any) => { outer: number[][]; inner?: number[][] }) => GeoJSFeature;
+  line: (callback: (d: any) => number[][]) => GeoJSFeature;
+  intensity: (callback: (d: any) => number) => GeoJSFeature;
   geoOn: (event: string, callback: (evt: any) => void) => void;
   geoOff: (event?: string, callback?: (evt: any) => void) => void;
   html: (callback: (d: any) => string) => GeoJSFeature;

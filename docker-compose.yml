@@ -13,8 +13,6 @@ services:
       GIN_MODE: release
       CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost,http://geopollute.local
       LOG_LEVEL: info
-    ports:
-      - "8080:8080"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`api.geopollute.local`)"

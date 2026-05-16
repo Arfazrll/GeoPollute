@@ -17,13 +17,19 @@ GeoPollute is a high-performance pollution monitoring dashboard for Jakarta. It 
 
 ### Running the Application
 
+**Step 1: Configure Local DNS**
+Before running the application, you must map the local domains to your localhost.
+Add the following line to your OS `hosts` file (e.g., `C:\Windows\System32\drivers\etc\hosts` on Windows or `/etc/hosts` on Mac/Linux):
+`127.0.0.1 geopollute.local api.geopollute.local`
+
+**Step 2: Start the Containers**
 To start the entire stack (API, Frontend, and Traefik):
 
 ```bash
-docker compose up -d
+docker-compose up -d --build
 ```
 
-Access the dashboard at `http://geopollute.local` (ensure your hosts file is configured).
+Access the dashboard at `http://geopollute.local`.
 
 ### Local Development
 

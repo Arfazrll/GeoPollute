@@ -50,14 +50,12 @@ func (s *PollutantService) GetReadingsByFilter(ctx context.Context, filter model
 		wg.Add(1)
 		go func(sn model.Sensor) {
 			defer wg.Done()
-			isV2 := sn.ID == "ae38fe54-454e-48e6-8f71-87fa5073d4cd" ||
-			        sn.ID == "3b81261a-bd1c-4d65-91f3-211fb33f2c31" ||
-					sn.ID == "44d5d408-17c1-49bd-bec3-eca943f78497"
+			isV2 := sn.ApiVersion == "v2"
 			sDate := today
 			if filter == "2m" || filter == "1h" {
 				sDate = yesterday
 			}
-			valPM25, valCO, valNO2, history, err := s.fetchExternalData(sn.ID, isV2, filter, sDate, today, startOfMonth)
+			valPM25, valCO, valNO2, history, err := s.fetchExternalData(sn.UUID, isV2, filter, sDate, today, startOfMonth)
 			if err == nil {
 				resultsChan <- model.SensorReadingDTO{
 					ID:    sn.ID,
