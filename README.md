@@ -1,11 +1,16 @@
 # GeoPollute
 
-GeoPollute is a high-performance pollution monitoring dashboard for Jakarta. It aggregates real-time data from external IoT sensors (LCS series) and visualizes air quality through high-fidelity spatial interpolation.
+GeoPollute is a high-performance pollution monitoring dashboard for Jakarta. It aggregates real-time data from 24 external IoT sensors (KRE & Clarity series) and visualizes air quality through high-fidelity spatial interpolation.
+
+### Supported Metrics
+- **Pollutants**: PM2.5, CO2, and NO2
+- **Time Filters**: 1 Hour (Hourly Average) and 24 Hours (Daily Average)
+- **Spatial Radius**: 3km interpolation radius per sensor
 
 ## Architecture
 
 - **Frontend**: React + Vite + GeoJS (Spatial Visualization)
-- **Backend**: Go (Stateless API Gateway)
+- **Backend**: Go (Stateless API Gateway with caching)
 - **Data Source**: External Langit Biru APIs (v1 & v2)
 
 ## Getting Started
