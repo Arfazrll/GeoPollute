@@ -1,4 +1,4 @@
-export const IDW_CELL_SIZE_KM = 0.04;
+export const IDW_CELL_SIZE_KM = 0.12;
 export const IDW_WEIGHT = 2;
 export const IDW_UNITS = 'kilometers' as const;
 export const POLLUTANT_THRESHOLDS = {

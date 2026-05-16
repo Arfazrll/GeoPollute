@@ -58,7 +58,7 @@ export function Sidebar({ onNavigate }: Props) {
           </button>
         </div>
         {}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-6">
+        <div className="flex-1 overflow-y-auto custom-scrollbar px-5 pt-5 pb-12 space-y-6">
           <div>
             <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 mb-3">
               Time Interval
