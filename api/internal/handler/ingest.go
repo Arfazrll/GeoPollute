@@ -1,28 +1,19 @@
 package handler
-
 import (
 	"errors"
 	"net/http"
-
 	"github.com/arfazrll/geopollute/api/internal/model"
 	"github.com/arfazrll/geopollute/api/internal/service"
 	"github.com/gin-gonic/gin"
 )
-
-// IngestHandler handles POST /ingest.
 type IngestHandler struct {
 	service *service.PollutantService
 }
-
-// NewIngestHandler creates a new ingest handler.
 func NewIngestHandler(s *service.PollutantService) *IngestHandler {
 	return &IngestHandler{service: s}
 }
-
-// Ingest accepts a new reading from IoT producer.
 func (h *IngestHandler) Ingest(c *gin.Context) {
 	var req model.IngestRequest
-
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, model.ErrorResponse{
 			Error: "invalid request body",
@@ -31,7 +22,6 @@ func (h *IngestHandler) Ingest(c *gin.Context) {
 		})
 		return
 	}
-
 	if err := h.service.IngestReading(c.Request.Context(), &req); err != nil {
 		switch {
 		case errors.Is(err, model.ErrSensorNotFound):
@@ -56,7 +46,6 @@ func (h *IngestHandler) Ingest(c *gin.Context) {
 		}
 		return
 	}
-
 	c.JSON(http.StatusCreated, model.IngestResponse{
 		Status:   "ok",
 		SensorID: req.SensorID,

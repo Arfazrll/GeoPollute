@@ -21,8 +21,6 @@
 *.crt
 infrastructure/traefik/acme.json
 
-# --- Database ---
-**/postgres/data/
 *.sql.gz
 *.dump
 backups/
@@ -56,7 +54,6 @@ api/coverage.out
 api/vendor/
 api/bin/
 
-# --- Python specific (db/seeds/) ---
 __pycache__/
 *.pyc
 *.pyo

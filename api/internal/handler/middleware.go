@@ -1,16 +1,12 @@
 package handler
-
 import (
 	"log/slog"
 	"net/http"
 	"time"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
-
-// CORSMiddleware configures cross-origin resource sharing.
 func CORSMiddleware(allowedOrigins []string) gin.HandlerFunc {
 	return cors.New(cors.Config{
 		AllowOrigins:     allowedOrigins,
@@ -21,8 +17,6 @@ func CORSMiddleware(allowedOrigins []string) gin.HandlerFunc {
 		MaxAge:           12 * time.Hour,
 	})
 }
-
-// RequestIDMiddleware adds a unique X-Request-ID to every request.
 func RequestIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqID := c.GetHeader("X-Request-ID")
@@ -34,32 +28,25 @@ func RequestIDMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
-
-// LoggerMiddleware logs every HTTP request with structured fields.
 func LoggerMiddleware(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		start := time.Now()
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
-
 		c.Next()
-
 		latency := time.Since(start)
 		status := c.Writer.Status()
 		reqID, _ := c.Get("request_id")
-
 		fullPath := path
 		if raw != "" {
 			fullPath = path + "?" + raw
 		}
-
 		logFn := log.Info
 		if status >= 500 {
 			logFn = log.Error
 		} else if status >= 400 {
 			logFn = log.Warn
 		}
-
 		logFn("http request",
 			"request_id", reqID,
 			"method", c.Request.Method,
@@ -70,8 +57,6 @@ func LoggerMiddleware(log *slog.Logger) gin.HandlerFunc {
 		)
 	}
 }
-
-// RecoveryMiddleware recovers from panics and returns 500.
 func RecoveryMiddleware(log *slog.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		defer func() {

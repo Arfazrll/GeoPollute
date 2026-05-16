@@ -1,7 +1,5 @@
 package model
-
 import "errors"
-
 var (
 	ErrInvalidSensorID      = errors.New("invalid sensor_id")
 	ErrInvalidPollutantType = errors.New("invalid pollutant_type (must be PM25, CO, or NO2)")

@@ -1,140 +1,111 @@
-import { useEffect, useState } from 'react';
-import geo from 'geojs';
-import { AQI_CATEGORY } from '@/features/map/utils/spatialLogic';
-import type { SensorReading } from '@/types';
-
+import { useMemo } from 'react';
+import { getPollutantCategory, getPollutantColor } from '@/features/map/utils/spatialLogic';
+import type { SensorReading, GeoJSMap } from '@/types';
+import { useFilterStore } from '@/store/useFilterStore';
 interface Props {
-  map: any;
-  pointFeature: any;
+  map: GeoJSMap | null;
+  selectedSensor: SensorReading | null;
+  x: number;
+  y: number;
 }
-
-interface PopupState {
-  sensor: SensorReading;
-  screenX: number;
-  screenY: number;
-}
-
-function Sparkline({ data }: { data: number[] }) {
-  const width = 120;
-  const height = 30;
+function Sparkline({ data, color }: { data: number[], color: string }) {
+  const width = 240;
+  const height = 40;
   const padding = 2;
-
   const min = Math.min(...data);
   const max = Math.max(...data);
-  const range = max - min || 1;
-
+  const range = (max - min) || 1;
   const points = data.map((val, i) => {
     const x = (i / (data.length - 1)) * (width - 2 * padding) + padding;
     const y = height - ((val - min) / range) * (height - 2 * padding) - padding;
     return `${x},${y}`;
   }).join(' ');
-
   return (
-    <svg width={width} height={height} className="mt-2 overflow-visible">
-      <defs>
-        <linearGradient id="sparkline-gradient" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#4ade80" stopOpacity="0.5" />
-          <stop offset="100%" stopColor="#4ade80" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polyline
-        fill="none"
-        stroke="#4ade80"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        points={points}
-      />
-      <path
-        d={`M ${points} L ${width - padding},${height} L ${padding},${height} Z`}
-        fill="url(#sparkline-gradient)"
-      />
-    </svg>
+    <div className="mt-4">
+      <svg width={width} height={height} className="overflow-visible">
+        <defs>
+          <linearGradient id="sparkline-gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.4" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polyline
+          fill="none"
+          stroke={color}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          points={points}
+          className="drop-shadow-[0_0_4px_rgba(0,0,0,0.1)]"
+        />
+        <path
+          d={`M ${points} L ${width - padding},${height} L ${padding},${height} Z`}
+          fill="url(#sparkline-gradient)"
+        />
+      </svg>
+      <div className="text-[9px] text-slate-400 font-medium mt-1 uppercase tracking-wider">
+        Trends observed locally
+      </div>
+    </div>
   );
 }
-
-export function PopupDetail({ map, pointFeature }: Props) {
-  const [popup, setPopup] = useState<PopupState | null>(null);
-
-  useEffect(() => {
-    if (!pointFeature || !map) return;
-
-    const handleClick = (evt: any) => {
-      const sensor = evt.data as SensorReading;
-      const screen = map.gcsToDisplay({ x: sensor.lng, y: sensor.lat });
-      setPopup({ sensor, screenX: screen.x, screenY: screen.y });
-    };
-
-    const closeIfMoving = () => setPopup(null);
-
-    pointFeature.geoOn(geo.event.feature.mouseclick, handleClick);
-    map.geoOn(geo.event.pan, closeIfMoving);
-    map.geoOn(geo.event.zoom, closeIfMoving);
-
-    return () => {
-      pointFeature.geoOff(geo.event.feature.mouseclick, handleClick);
-      map.geoOff(geo.event.pan, closeIfMoving);
-      map.geoOff(geo.event.zoom, closeIfMoving);
-    };
-  }, [pointFeature, map]);
-
-  if (!popup) return null;
-
-  const { sensor, screenX, screenY } = popup;
-
-  const mockHistory = Array.from({ length: 12 }, () =>
-    sensor.pm25 + (Math.random() - 0.5) * 10
-  );
-
+export function PopupDetail({ map, selectedSensor, x, y }: Props) {
+  const { pollutant, filter } = useFilterStore();
+  if (!selectedSensor || !map) return null;
+  const sensor = selectedSensor;
+  const screenX = x;
+  const screenY = y;
+  const displayValue = sensor[pollutant] || 0;
+  const unit = pollutant === 'pm25' ? 'µg/m³' : 'ppm';
+  const label = pollutant === 'co' ? 'CO2' : pollutant.toUpperCase();
+  const status = getPollutantCategory(displayValue, pollutant);
+  const statusColor = getPollutantColor(displayValue, pollutant);
+  const timeLabel = filter === '1h' ? '1 HOUR' : filter === '1d' ? '24 HOURS' : 'Real-time';
+  const historyData = useMemo(() => {
+    if (sensor.history && sensor.history.length > 0) {
+      return sensor.history.map(h => h.value);
+    }
+    return [displayValue, displayValue];
+  }, [sensor.history, displayValue]);
   return (
     <div
-      className="absolute z-20 pointer-events-none"
+      className="absolute z-[2000] pointer-events-none"
       style={{
         left: screenX,
-        top: screenY - 12,
+        top: screenY - 16,
         transform: 'translate(-50%, -100%)',
       }}
     >
-      <div className="glass text-white p-4 rounded-xl shadow-2xl min-w-[220px] pointer-events-auto relative">
-        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 rotate-45 glass border-t-0 border-l-0" />
-
-        <div className="flex justify-between items-center mb-3">
-          <span className="text-[10px] font-bold tracking-widest text-white/40 uppercase">
-            Sensor ID: {sensor.id}
-          </span>
-          <button
-            onClick={() => setPopup(null)}
-            className="text-white/40 hover:text-white transition-colors"
-          >
-            ✕
-          </button>
+      <div className="bg-white/95 text-slate-900 p-5 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-slate-100 min-w-[280px] backdrop-blur-xl">
+        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rotate-45 bg-white/95 border-r border-b border-slate-100" />
+        <div className="flex justify-between items-start mb-4">
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">
+            {sensor.name || `Sensor ${sensor.id}`}
+          </div>
+          <div className="px-2 py-0.5 bg-slate-100 rounded text-[8px] font-bold text-slate-500 uppercase tracking-wider">
+            {timeLabel}
+          </div>
         </div>
-
-        <div className="space-y-1 text-[11px] font-medium text-white/70">
-          <div className="flex justify-between">
-            <span>LAT:</span>
-            <span className="text-white">{sensor.lat.toFixed(4)}</span>
+        <div className="grid grid-cols-2 gap-y-1 mb-4">
+          <div className="text-[11px] text-slate-500 font-medium">LAT:</div>
+          <div className="text-[11px] text-slate-900 font-mono text-right">{sensor.lat.toFixed(4)}</div>
+          <div className="text-[11px] text-slate-500 font-medium">LNG:</div>
+          <div className="text-[11px] text-slate-900 font-mono text-right">{sensor.lng.toFixed(4)}</div>
+        </div>
+        <div className="pt-3 border-t border-slate-100">
+          <div className="flex items-baseline gap-2">
+            <span className="text-[11px] text-slate-500 font-bold uppercase">{label}:</span>
+            <span className="text-2xl font-black text-slate-900 tracking-tight">
+              {displayValue.toFixed(1)} <span className="text-[10px] font-normal text-slate-400 ml-0.5">{unit}</span>
+            </span>
+            <span
+              className="text-[10px] font-bold uppercase ml-auto px-2 py-0.5 rounded shadow-sm"
+              style={{ backgroundColor: statusColor, color: 'white' }}
+            >
+              {status}
+            </span>
           </div>
-          <div className="flex justify-between">
-            <span>LNG:</span>
-            <span className="text-white">{sensor.lng.toFixed(4)}</span>
-          </div>
-          <div className="pt-2 border-t border-white/5 mt-2">
-            <div className="flex justify-between items-end">
-              <div>
-                <div className="text-white text-lg font-bold">
-                  {sensor.pm25} <span className="text-[10px] font-normal opacity-50">µg/m³</span>
-                </div>
-                <div className="text-[9px] font-bold text-blue-400 tracking-tighter">
-                  {AQI_CATEGORY(sensor.pm25)}
-                </div>
-              </div>
-              <div className="text-right">
-                <Sparkline data={mockHistory} />
-                <div className="text-[8px] opacity-40 mt-1">Last 30 minutes</div>
-              </div>
-            </div>
-          </div>
+          <Sparkline data={historyData} color={statusColor} />
         </div>
       </div>
     </div>

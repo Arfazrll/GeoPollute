@@ -1,47 +1,18 @@
 name: geopollute
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: geopollute-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-pollutant}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme123}
-      POSTGRES_DB: ${POSTGRES_DB:-pollutant_db}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./db/migrations:/docker-entrypoint-initdb.d/01-migrations:ro
-      - ./db/seeds:/docker-entrypoint-initdb.d/02-seeds:ro
-      - ./db/functions:/docker-entrypoint-initdb.d/03-functions:ro
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pollutant}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - geopollute-net
-
   api:
     build:
       context: ./api
       dockerfile: Dockerfile
     container_name: geopollute-api
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
       API_PORT: 8080
       API_HOST: 0.0.0.0
       GIN_MODE: release
-      DATABASE_URL: postgres://${POSTGRES_USER:-pollutant}:${POSTGRES_PASSWORD:-changeme123}@postgres:5432/${POSTGRES_DB:-pollutant_db}?sslmode=disable
       CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost,http://geopollute.local
       LOG_LEVEL: info
-    ports:
-      - "8080:8080"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.api.rule=Host(`api.geopollute.local`)"
@@ -56,7 +27,6 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_BASE: http://api.geopollute.local
-        VITE_USE_MOCK: "false"
     container_name: geopollute-frontend
     restart: unless-stopped
     depends_on:
@@ -83,31 +53,11 @@ services:
       - "--log.level=INFO"
     ports:
       - "80:80"
-      - "8081:8080"  # Traefik dashboard
+      - "8081:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - geopollute-net
-
-  producer:
-    build:
-      context: ./producer
-      dockerfile: Dockerfile
-    container_name: geopollute-producer
-    restart: unless-stopped
-    depends_on:
-      - api
-    environment:
-      API_BASE: http://api:8080
-      INTERVAL_SECONDS: 120
-    profiles:
-      - demo
-    networks:
-      - geopollute-net
-
-volumes:
-  postgres-data:
-    driver: local
 
 networks:
   geopollute-net:
