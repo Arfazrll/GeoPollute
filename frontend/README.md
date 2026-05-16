@@ -1,51 +1,73 @@
-# GeoPollute
+# React + TypeScript + Vite
 
-GeoPollute is a high-performance pollution monitoring dashboard for Jakarta. It aggregates real-time data from external IoT sensors (LCS series) and visualizes air quality through high-fidelity spatial interpolation.
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules
 
-## Architecture
+Currently, two official plugins are available:
 
-- **Frontend**: React + Vite + GeoJS (Spatial Visualization)
-- **Backend**: Go (Stateless API Gateway)
-- **Data Source**: External Langit Biru APIs (v1 & v2)
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
 
-## Getting Started
+## React Compiler
 
-### Prerequisites
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-- [Docker](https://www.docker.com/)
-- [Docker Compose](https://docs.docker.com/compose/)
+## Expanding the ESLint configuration
 
-### Running the Application
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
 
-**Step 1: Configure Local DNS**
-Before running the application, you must map the local domains to your localhost.
-Add the following line to your OS `hosts` file (e.g., `C:\Windows\System32\drivers\etc\hosts` on Windows or `/etc/hosts` on Mac/Linux):
-`127.0.0.1 geopollute.local api.geopollute.local`
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
 
-**Step 2: Start the Containers**
-To start the entire stack (API, Frontend, and Traefik):
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
 
-```bash
-docker-compose up -d --build
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
 ```
 
-Access the dashboard at `http://geopollute.local`.
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
-### Local Development
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
 
-1. **Backend**:
-   ```bash
-   cd api
-   go run cmd/server/main.go
-   ```
-
-2. **Frontend**:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-## License
-
-MIT
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
