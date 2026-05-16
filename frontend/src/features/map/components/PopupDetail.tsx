@@ -16,7 +16,8 @@ function Sparkline({ data, color }: { data: number[], color: string }) {
   const max = Math.max(...data);
   const range = (max - min) || 1;
   const points = data.map((val, i) => {
-    const x = (i / (data.length - 1)) * (width - 2 * padding) + padding;
+    const divisor = data.length > 1 ? data.length - 1 : 1;
+    const x = (i / divisor) * (width - 2 * padding) + padding;
     const y = height - ((val - min) / range) * (height - 2 * padding) - padding;
     return `${x},${y}`;
   }).join(' ');
@@ -96,13 +97,13 @@ export function PopupDetail({ map, selectedSensor, x, y }: Props) {
           <div className="flex items-baseline gap-2">
             <span className="text-[11px] text-slate-500 font-bold uppercase">{label}:</span>
             <span className="text-2xl font-black text-slate-900 tracking-tight">
-              {displayValue.toFixed(1)} <span className="text-[10px] font-normal text-slate-400 ml-0.5">{unit}</span>
+              {displayValue > 0 ? displayValue.toFixed(1) : '---'} <span className="text-[10px] font-normal text-slate-400 ml-0.5">{unit}</span>
             </span>
             <span
               className="text-[10px] font-bold uppercase ml-auto px-2 py-0.5 rounded shadow-sm"
               style={{ backgroundColor: statusColor, color: 'white' }}
             >
-              {status}
+              {displayValue > 0 ? status : 'NO DATA'}
             </span>
           </div>
           <Sparkline data={historyData} color={statusColor} />

@@ -1,4 +1,4 @@
-export type FilterMode = '2m' | '1h' | '1d';
+export type FilterMode = '2m' | '1h' | '1d' | 'custom';
 export type PollutantType = 'pm25' | 'co' | 'no2';
 export interface SensorReading {
   id: string;

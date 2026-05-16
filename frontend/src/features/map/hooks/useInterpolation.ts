@@ -46,7 +46,7 @@ export function useInterpolation(sensors: SensorReading[] | undefined) {
           const coords = feature.geometry.coordinates[0][0];
           let minDistSq = 999999;
           const R_INV = 1 / 111.32;
-          const THRESHOLD_SQ = Math.pow(3.0 * R_INV, 2);
+          const THRESHOLD_SQ = Math.pow(5.0 * R_INV, 2);
           for (let i = 0; i < activeSensors.length; i++) {
             const s = activeSensors[i];
             const dx = s.lng - coords[0];

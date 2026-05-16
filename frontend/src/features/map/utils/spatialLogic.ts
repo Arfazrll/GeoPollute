@@ -19,8 +19,10 @@ export const COLORS = {
   GOOD: '#22C55E',
   MODERATE: '#EAB308',
   UNHEALTHY: '#EF4444',
+  NO_DATA: '#94A3B8', // Neutral Slate
 };
 export const getPollutantCategory = (value: number, type: 'pm25' | 'co' | 'no2'): string => {
+  if (value <= 0) return 'NO_DATA';
   const threshold = POLLUTANT_THRESHOLDS[type];
   if (value < threshold.good) return 'GOOD';
   if (value <= threshold.moderate) return 'MODERATE';
@@ -28,14 +30,14 @@ export const getPollutantCategory = (value: number, type: 'pm25' | 'co' | 'no2')
 };
 export const getPollutantColor = (value: number, type: 'pm25' | 'co' | 'no2' = 'pm25'): string => {
   const category = getPollutantCategory(value, type);
-  return COLORS[category as keyof typeof COLORS];
+  return COLORS[category as keyof typeof COLORS] || COLORS.NO_DATA;
 };
 export const AQI_CATEGORY = (pm25: number): string => {
   return getPollutantCategory(pm25, 'pm25');
 };
 export const MAP_CENTER = { x: 106.8456, y: -6.2088 };
 export const MAP_ZOOM = 11;
-export const POLLING_INTERVAL_MS = 120_000;
+export const POLLING_INTERVAL_MS = 60_000;
 export const JAKARTA_BOUNDS = {
   minLng: 106.6894,
   maxLng: 106.9728,

@@ -12,15 +12,17 @@ interface Props {
 }
 export function Sidebar({ onNavigate }: Props) {
   const [isOpen, setIsOpen] = useState(true);
-  const filter = useFilterStore((s) => s.filter);
+  const pollutant = useFilterStore((s) => s.pollutant);
+  const customRange = useFilterStore((s) => s.customRange);
   const { isFetching, isError } = usePollutantData();
+
   const statusText = isError
     ? 'Connection lost — showing cached data'
     : isFetching
-    ? 'Refreshing...'
-    : filter === '2m'
-    ? 'Data Auto-refresh Active (Next in 92 seconds)'
-    : 'Aggregated data';
+    ? `Fetching latest ${pollutant.toUpperCase()} data...`
+    : customRange
+    ? 'Viewing Custom Range History'
+    : `Monitoring ${pollutant.toUpperCase()} • Live Auto-refresh Active`;
   return (
     <div className="relative group h-[calc(100vh-2rem)] flex flex-col">
       {}

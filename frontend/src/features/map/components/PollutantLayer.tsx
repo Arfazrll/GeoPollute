@@ -21,7 +21,17 @@ export function PollutantLayer({ featureLayer, map }: Props) {
   const [hoveredSensor, setHoveredSensor] = useState<any>(null);
 
   useEffect(() => {
-    if (!grid || !featureLayer) return;
+    if (!featureLayer) return;
+
+    // IF DATA IS EMPTY, CLEAR THE MAP AND EXIT
+    if (!grid) {
+      if (polygonRef.current) {
+        featureLayer.deleteFeature(polygonRef.current);
+        polygonRef.current = null;
+      }
+      return;
+    }
+
     const features = (grid as any).features;
     if (!polygonRef.current) {
       polygonRef.current = featureLayer
@@ -36,13 +46,14 @@ export function PollutantLayer({ featureLayer, map }: Props) {
           fillOpacity: (_v: any, _i: number, d: any) => {
             const dist = d.properties.dist || 0;
             const baseOpacity = isError ? 0.25 : 0.55;
-            if (dist <= 2.0) return baseOpacity;
-            if (dist >= 3.0) return 0;
-            return baseOpacity * (1 - (dist - 2.0) / 1.0);
+            if (dist <= 3.5) return baseOpacity;
+            if (dist >= 5.0) return 0;
+            return baseOpacity * (1 - (dist - 3.5) / 1.5);
           },
           stroke: false,
         });
     }
+    
     polygonRef.current
       .data(features)
       .style({
@@ -50,9 +61,9 @@ export function PollutantLayer({ featureLayer, map }: Props) {
         fillOpacity: (_v: any, _i: number, d: any) => {
           const dist = d.properties.dist || 0;
           const baseOpacity = isError ? 0.25 : 0.55;
-          if (dist <= 2.0) return baseOpacity;
-          if (dist >= 3.0) return 0;
-          return baseOpacity * (1 - (dist - 2.0) / 1.0);
+          if (dist <= 3.5) return baseOpacity;
+          if (dist >= 5.0) return 0;
+          return baseOpacity * (1 - (dist - 3.5) / 1.5);
         }
       })
       .draw();
