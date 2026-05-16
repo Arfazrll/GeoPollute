@@ -63,7 +63,7 @@ export function useInterpolation(sensors: SensorReading[] | undefined) {
       } finally {
         setIsCalculating(false);
       }
-    }, 150);
+    }, 300);
     return () => clearTimeout(timeout);
   }, [sensors, pollutant, selectedGroup]);
   return { grid, isCalculating };

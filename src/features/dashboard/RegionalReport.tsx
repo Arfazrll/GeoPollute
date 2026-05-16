@@ -1,14 +1,14 @@
-import { usePollutantData } from '@/features/map/hooks/usePollutantData';
 import { DEVICES_INFO } from '@/constants/devices';
 import { FileText, ChevronRight } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { COLORS } from '@/features/map/utils/spatialLogic';
 import type { PollutantType } from '@/types';
-export function RegionalReport() {
+import { usePollutantData } from '@/features/map/hooks/usePollutantData';
+
+function RegionalReportContent({ activeType }: { activeType: PollutantType }) {
   const { data: data1h } = usePollutantData('1h');
   const { data: data1d } = usePollutantData('1d');
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [activeType, setActiveType] = useState<PollutantType>('pm25');
+
   const report = useMemo(() => {
     if (!data1h?.data || !data1d?.data) return [];
     const groups = Array.from(new Set(DEVICES_INFO.map(d => d.group)));
@@ -18,21 +18,13 @@ export function RegionalReport() {
         const s1h = data1h.data.find((s: any) => s.id === gs.id);
         const s1d = data1d.data.find((s: any) => s.id === gs.id);
         if (!s1h) return null;
-        return {
-          id: gs.id,
-          name: gs.name,
-          h1: s1h[activeType],
-          h24: s1d?.[activeType] || 0,
-        };
+        return { id: gs.id, name: gs.name, h1: s1h[activeType], h24: s1d?.[activeType] || 0 };
       }).filter(Boolean);
-      return {
-        group,
-        sensors: readings,
-        color: groupSensors[0]?.color || '#3B82F6'
-      };
+      return { group, sensors: readings, color: groupSensors[0]?.color || '#3B82F6' };
     });
   }, [data1h, data1d, activeType]);
-  const MetricRow = ({ label, value }: { label: string, value: number }) => {
+
+  const MetricRow = ({ label, value }: { label: string; value: number }) => {
     let bgColor = COLORS.GOOD;
     let emoji = '😊';
     let unit = 'µg/m³';
@@ -60,7 +52,6 @@ export function RegionalReport() {
           </div>
           <div className="flex flex-col">
             <span className="text-[10px] font-bold text-slate-800 leading-none">{label}</span>
-            <span className="text-[8px] font-mono font-bold text-slate-400 mt-1 italic">HCM-2 System</span>
           </div>
         </div>
         <div className="flex items-baseline gap-1">
@@ -70,7 +61,45 @@ export function RegionalReport() {
       </div>
     );
   };
-  const TabButton = ({ type, label }: { type: PollutantType, label: string }) => (
+
+  return (
+    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-8 space-y-6">
+      {report.map((region, i) => (
+        <div key={i} className="flex flex-col gap-4">
+          <div className="flex items-center gap-2 sticky top-0 bg-white/90 backdrop-blur-md py-2 z-10">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: (region as any).color }} />
+            <span className="text-[12px] font-black text-slate-900 uppercase tracking-[0.1em]">
+              {(region as any).group}
+            </span>
+            <div className="h-[1px] flex-1 bg-slate-100 ml-2" />
+          </div>
+          {(region as any).sensors.map((sensor: any, j: number) => (
+            <div key={j} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:border-blue-200 transition-colors">
+              <div className="bg-slate-50/50 px-4 py-2 border-b border-slate-100 flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-600 truncate max-w-[180px]">
+                  {sensor.name}
+                </span>
+                <span className="text-[8px] font-mono font-bold text-slate-300">
+                  {sensor.id}
+                </span>
+              </div>
+              <div className="p-4 space-y-1">
+                <MetricRow label="1 HOUR" value={sensor.h1} />
+                <MetricRow label="24 HOURS" value={sensor.h24} />
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function RegionalReport() {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [activeType, setActiveType] = useState<PollutantType>('pm25');
+
+  const TabButton = ({ type, label }: { type: PollutantType; label: string }) => (
     <button
       onClick={() => setActiveType(type)}
       className={`px-3 py-1.5 rounded-lg text-[9px] font-black transition-all ${
@@ -82,6 +111,7 @@ export function RegionalReport() {
       {label}
     </button>
   );
+
   return (
     <div className="mt-6 pt-6 border-t border-slate-200">
       <button
@@ -103,49 +133,15 @@ export function RegionalReport() {
         </div>
         <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-90 text-blue-600' : ''}`} />
       </button>
+
       {isExpanded && (
         <div className="mt-4 flex flex-col h-[700px]">
-          {}
           <div className="flex items-center gap-2 mb-4 p-1 bg-slate-50 rounded-xl border border-slate-100">
             <TabButton type="pm25" label="PM2.5" />
             <TabButton type="co" label="CO2" />
             <TabButton type="no2" label="NO2" />
           </div>
-          <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-8 space-y-6">
-            {report.map((region, i) => (
-              <div key={i} className="flex flex-col gap-4">
-                <div className="flex items-center gap-2 sticky top-0 bg-white/90 backdrop-blur-md py-2 z-10">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: (region as any).color }} />
-                  <span className="text-[12px] font-black text-slate-900 uppercase tracking-[0.1em]">
-                    {(region as any).group}
-                  </span>
-                  <div className="h-[1px] flex-1 bg-slate-100 ml-2" />
-                </div>
-                {(region as any).sensors.map((sensor: any, j: number) => (
-                  <div key={j} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden hover:border-blue-200 transition-colors">
-                    <div className="bg-slate-50/50 px-4 py-2 border-b border-slate-100 flex items-center justify-between">
-                      <span className="text-[10px] font-black text-slate-600 truncate max-w-[180px]">
-                        {sensor.name}
-                      </span>
-                      <span className="text-[8px] font-mono font-bold text-slate-300">
-                        {sensor.id}
-                      </span>
-                    </div>
-                    <div className="p-4 space-y-1">
-                      <MetricRow
-                        label="1 HOUR"
-                        value={sensor.h1}
-                      />
-                      <MetricRow
-                        label="24 HOURS"
-                        value={sensor.h24}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
+          <RegionalReportContent activeType={activeType} />
         </div>
       )}
     </div>

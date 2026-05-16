@@ -10,6 +10,7 @@ export function usePollutantData(overrideFilter?: string) {
     queryFn: () => fetchPollutantData(filter as any),
     refetchInterval: filter === '2m' ? POLLING_INTERVAL_MS : false,
     staleTime: filter === '2m' ? 60_000 : 5 * 60_000,
+    gcTime: 10 * 60_000,
     retry: 2,
   });
 }
