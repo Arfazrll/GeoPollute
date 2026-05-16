@@ -1,13 +1,13 @@
 import { DEVICES_INFO } from '@/constants/devices';
-import { FileText, ChevronRight } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { FileText, ChevronRight, Calendar } from 'lucide-react';
+import { useMemo, useState, useRef } from 'react';
 import { COLORS } from '@/features/map/utils/spatialLogic';
 import type { PollutantType } from '@/types';
 import { usePollutantData } from '@/features/map/hooks/usePollutantData';
 
-function RegionalReportContent({ activeType }: { activeType: PollutantType }) {
-  const { data: data1h } = usePollutantData('1h');
-  const { data: data1d } = usePollutantData('1d');
+function RegionalReportContent({ activeType, start, end }: { activeType: PollutantType; start?: string; end?: string }) {
+  const { data: data1h } = usePollutantData('1h', start, end);
+  const { data: data1d } = usePollutantData('1d', start, end);
 
   const report = useMemo(() => {
     if (!data1h?.data || !data1d?.data) return [];
@@ -63,7 +63,7 @@ function RegionalReportContent({ activeType }: { activeType: PollutantType }) {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-8 space-y-6">
+    <div className="flex flex-col pr-2 pb-8 space-y-6">
       {report.map((region, i) => (
         <div key={i} className="flex flex-col gap-4">
           <div className="flex items-center gap-2 sticky top-0 bg-white/90 backdrop-blur-md py-2 z-10">
@@ -84,8 +84,8 @@ function RegionalReportContent({ activeType }: { activeType: PollutantType }) {
                 </span>
               </div>
               <div className="p-4 space-y-1">
-                <MetricRow label="1 HOUR" value={sensor.h1} />
-                <MetricRow label="24 HOURS" value={sensor.h24} />
+                <MetricRow label={start || end ? "SELECTED RANGE" : "1 HOUR"} value={sensor.h1} />
+                <MetricRow label={start || end ? "COMPARE RANGE" : "24 HOURS"} value={sensor.h24} />
               </div>
             </div>
           ))}
@@ -102,48 +102,97 @@ export function RegionalReport() {
   const TabButton = ({ type, label }: { type: PollutantType; label: string }) => (
     <button
       onClick={() => setActiveType(type)}
-      className={`px-3 py-1.5 rounded-lg text-[9px] font-black transition-all ${
-        activeType === type
-          ? 'bg-blue-600 text-white shadow-md shadow-blue-100'
-          : 'bg-white border border-slate-200 text-slate-400 hover:border-blue-200'
-      }`}
+      className={`px-3 py-1.5 rounded-lg text-[9px] font-black transition-all ${activeType === type
+        ? 'bg-blue-600 text-white shadow-md shadow-blue-100'
+        : 'bg-white border border-slate-200 text-slate-400 hover:border-blue-200'
+        }`}
     >
       {label}
     </button>
   );
 
-  return (
-    <div className="mt-6 pt-6 border-t border-slate-200">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between group bg-blue-500/5 hover:bg-blue-500/10 p-4 rounded-2xl transition-all border border-blue-500/10 shadow-sm"
-      >
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-200 group-hover:scale-105 transition-transform">
-            <FileText className="w-5 h-5" />
-          </div>
-          <div className="text-left">
-            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-800">
-              Regional Analysis Log
-            </div>
-            <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-              Live Sensor Diagnostic Report
-            </div>
-          </div>
-        </div>
-        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-90 text-blue-600' : ''}`} />
-      </button>
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const startInputRef = useRef<HTMLInputElement>(null);
+  const endInputRef = useRef<HTMLInputElement>(null);
 
-      {isExpanded && (
-        <div className="mt-4 flex flex-col h-[700px]">
-          <div className="flex items-center gap-2 mb-4 p-1 bg-slate-50 rounded-xl border border-slate-100">
-            <TabButton type="pm25" label="PM2.5" />
-            <TabButton type="co" label="CO2" />
-            <TabButton type="no2" label="NO2" />
+  const handleIconClick = (ref: React.RefObject<HTMLInputElement | null>) => {
+    if (ref.current) {
+      try {
+        (ref.current as any).showPicker();
+      } catch (e) {
+        ref.current.focus();
+      }
+    }
+  };
+
+  return (
+    <div className="mt-6 pt-6 border-t border-slate-200 space-y-6">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-blue-600 rounded-lg text-white shadow-md shadow-blue-100">
+            <FileText className="w-4 h-4" />
           </div>
-          <RegionalReportContent activeType={activeType} />
+          <div className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-800">
+            Regional Analysis Filter
+          </div>
         </div>
-      )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
+              Start Date
+            </label>
+            <div className="relative group">
+              <input
+                ref={startInputRef}
+                type="datetime-local"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-[11px] font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all appearance-none pr-10 hide-calendar-picker"
+              />
+              <button
+                type="button"
+                onClick={() => handleIconClick(startInputRef)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center hover:bg-slate-50 p-1 rounded-md transition-colors"
+              >
+                <Calendar className="w-4 h-4 text-slate-400 group-focus-within:text-blue-500" />
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1">
+              End Date
+            </label>
+            <div className="relative group">
+              <input
+                ref={endInputRef}
+                type="datetime-local"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-[11px] font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all appearance-none pr-10 hide-calendar-picker"
+              />
+              <button
+                type="button"
+                onClick={() => handleIconClick(endInputRef)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center hover:bg-slate-50 p-1 rounded-md transition-colors"
+              >
+                <Calendar className="w-4 h-4 text-slate-400 group-focus-within:text-blue-500" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col">
+        <div className="flex items-center gap-2 mb-4 p-1 bg-slate-50 rounded-xl border border-slate-100">
+          <TabButton type="pm25" label="PM2.5" />
+          <TabButton type="co" label="CO2" />
+          <TabButton type="no2" label="NO2" />
+        </div>
+        <RegionalReportContent activeType={activeType} start={startDate} end={endDate} />
+      </div>
     </div>
   );
 }
