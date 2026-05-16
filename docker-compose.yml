@@ -1,0 +1,64 @@
+name: geopollute
+
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: geopollute-api
+    restart: unless-stopped
+    environment:
+      API_PORT: 8080
+      API_HOST: 0.0.0.0
+      GIN_MODE: release
+      CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost,http://geopollute.local
+      LOG_LEVEL: info
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`api.geopollute.local`)"
+      - "traefik.http.routers.api.entrypoints=web"
+      - "traefik.http.services.api.loadbalancer.server.port=8080"
+    networks:
+      - geopollute-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE: http://api.geopollute.local
+    container_name: geopollute-frontend
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "5173:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`geopollute.local`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+    networks:
+      - geopollute-net
+
+  traefik:
+    image: traefik:v3.2
+    container_name: geopollute-traefik
+    restart: unless-stopped
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--log.level=INFO"
+    ports:
+      - "80:80"
+      - "8081:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - geopollute-net
+
+networks:
+  geopollute-net:
+    driver: bridge
