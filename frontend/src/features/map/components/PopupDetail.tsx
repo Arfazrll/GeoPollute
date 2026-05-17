@@ -56,11 +56,11 @@ export function PopupDetail({ map, selectedSensor, x, y }: Props) {
   const sensor = selectedSensor;
   const screenX = x;
   const screenY = y;
-  const displayValue = sensor[pollutant] || 0;
-  const unit = pollutant === 'pm25' ? 'µg/m³' : 'ppm';
+  const displayValue = sensor[pollutant] !== undefined && sensor[pollutant] !== null ? sensor[pollutant] : -1;
+  const unit = pollutant === 'co' ? 'ppm' : 'µg/m³';
   const label = pollutant === 'co' ? 'CO2' : pollutant.toUpperCase();
-  const status = getPollutantCategory(displayValue, pollutant);
-  const statusColor = getPollutantColor(displayValue, pollutant);
+  const status = displayValue >= 0 ? getPollutantCategory(displayValue, pollutant) : 'NO DATA';
+  const statusColor = displayValue >= 0 ? getPollutantColor(displayValue, pollutant) : '#94A3B8';
   const timeLabel = filter === '1h' ? '1 HOUR' : filter === '1d' ? '24 HOURS' : 'Real-time';
   const historyData = useMemo(() => {
     if (sensor.history && sensor.history.length > 0) {
@@ -97,13 +97,13 @@ export function PopupDetail({ map, selectedSensor, x, y }: Props) {
           <div className="flex items-baseline gap-2">
             <span className="text-[11px] text-slate-500 font-bold uppercase">{label}:</span>
             <span className="text-2xl font-black text-slate-900 tracking-tight">
-              {displayValue > 0 ? displayValue.toFixed(1) : '---'} <span className="text-[10px] font-normal text-slate-400 ml-0.5">{unit}</span>
+              {displayValue >= 0 ? displayValue.toFixed(1) : '---'} <span className="text-[10px] font-normal text-slate-400 ml-0.5">{unit}</span>
             </span>
             <span
               className="text-[10px] font-bold uppercase ml-auto px-2 py-0.5 rounded shadow-sm"
               style={{ backgroundColor: statusColor, color: 'white' }}
             >
-              {displayValue > 0 ? status : 'NO DATA'}
+              {displayValue >= 0 ? status : 'NO DATA'}
             </span>
           </div>
           <Sparkline data={historyData} color={statusColor} />

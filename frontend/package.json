@@ -16,6 +16,8 @@
     "@turf/helpers": "^7.3.5",
     "@turf/interpolate": "^7.3.5",
     "@turf/union": "^7.3.5",
+    "d3-color": "^3.1.0",
+    "d3-interpolate": "^3.0.1",
     "geojs": "^1.19.1",
     "lucide-react": "^1.14.0",
     "react": "^19.2.6",

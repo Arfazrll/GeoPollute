@@ -7,23 +7,29 @@ import { PopupDetail } from './PopupDetail';
 import { type GeoJSMap, type GeoJSLayer, type GeoJSFeature } from '@/types';
 import { DEVICES_INFO } from '@/constants/devices';
 import geo from 'geojs';
-
 interface Props {
   featureLayer: GeoJSLayer | null;
   map: GeoJSMap | null;
 }
-
 export function PollutantLayer({ featureLayer, map }: Props) {
   const { pollutant, selectedGroup } = useFilterStore();
   const { data: pollutantData, isError } = usePollutantData();
   const { grid } = useInterpolation(pollutantData?.data);
   const polygonRef = useRef<GeoJSFeature | null>(null);
   const [hoveredSensor, setHoveredSensor] = useState<any>(null);
-
   useEffect(() => {
     if (!featureLayer) return;
-
-    // IF DATA IS EMPTY, CLEAR THE MAP AND EXIT
+    try {
+      const layerNode = (featureLayer as any).node();
+      if (layerNode) {
+        const domNode = layerNode[0] || layerNode;
+        if (domNode && domNode.style) {
+          domNode.style.filter = 'blur(20px)';
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to apply CSS blur to GeoJS layer', e);
+    }
     if (!grid) {
       if (polygonRef.current) {
         featureLayer.deleteFeature(polygonRef.current);
@@ -31,7 +37,6 @@ export function PollutantLayer({ featureLayer, map }: Props) {
       }
       return;
     }
-
     const features = (grid as any).features;
     if (!polygonRef.current) {
       polygonRef.current = featureLayer
@@ -53,7 +58,6 @@ export function PollutantLayer({ featureLayer, map }: Props) {
           stroke: false,
         });
     }
-    
     polygonRef.current
       .data(features)
       .style({
@@ -68,28 +72,21 @@ export function PollutantLayer({ featureLayer, map }: Props) {
       })
       .draw();
   }, [grid, isError, featureLayer, pollutant]);
-
   useEffect(() => {
     if (!map) return;
-
     const existingContainer = document.getElementById('manual-marker-overlay');
     if (existingContainer) existingContainer.remove();
-
     const container = document.createElement('div');
     container.id = 'manual-marker-overlay';
     container.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1000;';
-
     const mapNode = map.node() as any;
     const parent = mapNode.appendChild ? mapNode : (mapNode[0] || mapNode);
     parent.appendChild(container);
-
     const apiSensorMap = new Map<string, any>();
     (pollutantData?.data ?? []).forEach((s: any) => apiSensorMap.set(s.id, s));
-
     const allDevices = selectedGroup
       ? DEVICES_INFO.filter(d => d.group === selectedGroup)
       : DEVICES_INFO;
-
     const activeSensors = allDevices.map(device => {
       const api = apiSensorMap.get(device.id);
       return {
@@ -99,9 +96,7 @@ export function PollutantLayer({ featureLayer, map }: Props) {
         ...(api ?? {}),
       };
     });
-
     const markerMap = new Map<string, HTMLElement>();
-
     activeSensors.forEach((d: any) => {
       const info = DEVICES_INFO.find(i =>
         i.id === d.id ||
@@ -116,7 +111,6 @@ export function PollutantLayer({ featureLayer, map }: Props) {
         else if (info.group.includes('Clarity')) color = '#3B82F6';
         else color = info.color;
       }
-
       const marker = document.createElement('div');
       marker.className = 'manual-pin-marker';
       marker.style.cssText = 'position:absolute;top:0;left:0;pointer-events:auto;cursor:pointer;will-change:transform;';
@@ -128,17 +122,14 @@ export function PollutantLayer({ featureLayer, map }: Props) {
           </svg>
         </div>
       `;
-
       marker.onmouseenter = () => {
         const pos = map.gcsToDisplay({ x: Number(d.lng), y: Number(d.lat) });
         setHoveredSensor({ ...d, ...pos });
       };
       marker.onmouseleave = () => setHoveredSensor(null);
-
       container.appendChild(marker);
       markerMap.set(d.id, marker);
     });
-
     const styleId = 'manual-marker-styles';
     if (!document.getElementById(styleId)) {
       const style = document.createElement('style');
@@ -146,7 +137,6 @@ export function PollutantLayer({ featureLayer, map }: Props) {
       style.innerHTML = `.manual-pin-marker:hover .pin-wrapper{transform:translate(-12px,-24px) scale(1.4) translateY(-6px) !important;filter:brightness(1.2) drop-shadow(0 4px 8px rgba(0,0,0,0.5)) !important;z-index:10000;}`;
       document.head.appendChild(style);
     }
-
     let rafId = 0;
     const updatePositions = () => {
       if (rafId) return;
@@ -160,15 +150,12 @@ export function PollutantLayer({ featureLayer, map }: Props) {
         });
       });
     };
-
     updatePositions();
-
     const hidePopup = () => setHoveredSensor(null);
     map.geoOn(geo.event.pan, updatePositions);
     map.geoOn(geo.event.zoom, updatePositions);
     map.geoOn(geo.event.pan, hidePopup);
     map.geoOn(geo.event.zoom, hidePopup);
-
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
       map.geoOff(geo.event.pan, updatePositions);
@@ -178,7 +165,6 @@ export function PollutantLayer({ featureLayer, map }: Props) {
       if (container.parentNode) container.parentNode.removeChild(container);
     };
   }, [pollutantData, map, selectedGroup, pollutant]);
-
   return (
     <>
       {hoveredSensor && (

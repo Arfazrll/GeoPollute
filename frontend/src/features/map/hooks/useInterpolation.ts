@@ -15,6 +15,7 @@ export function useInterpolation(sensors: SensorReading[] | undefined) {
       return;
     }
     const activeSensors = sensors.filter(s => {
+      if (s[pollutant] <= 0) return false; 
       if (!selectedGroup) return true;
       const info = DEVICES_INFO.find(d => d.id === s.id);
       return info?.group === selectedGroup;

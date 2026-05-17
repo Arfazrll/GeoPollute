@@ -10,9 +10,10 @@ function RegionalReportContent({ activeType }: { activeType: PollutantType }) {
   const customRange = useFilterStore(s => s.customRange);
   const { data: data1h } = usePollutantData('1h');
   const { data: data1d } = usePollutantData('1d');
+  const { data: dataCustom } = usePollutantData();
 
   const report = useMemo(() => {
-    const sourceData = (customRange ? data1h : data1h)?.data || [];
+    const sourceData = (customRange ? dataCustom : data1h)?.data || [];
     const sourceDataDaily = data1d?.data || [];
 
     if (sourceData.length === 0) return [];
@@ -42,8 +43,8 @@ function RegionalReportContent({ activeType }: { activeType: PollutantType }) {
     let unit = activeType === 'pm25' ? 'µg/m³' : activeType === 'co' ? 'ppm' : 'µg/m³';
     let statusLabel = 'GOOD';
 
-    if (value <= 0) {
-      bgColor = COLORS.NO_DATA;
+    if (value < 0) {
+      bgColor = COLORS.NO_DATA || '#94A3B8';
       emoji = '😶';
       statusLabel = 'NO DATA';
     } else if (activeType === 'pm25') {
@@ -72,7 +73,9 @@ function RegionalReportContent({ activeType }: { activeType: PollutantType }) {
           </div>
         </div>
         <div className="flex items-baseline gap-1">
-          <span className="text-[13px] font-black text-slate-900 font-mono tracking-tight">{value.toFixed(2)}</span>
+          <span className="text-[13px] font-black text-slate-900 font-mono tracking-tight">
+            {value >= 0 ? value.toFixed(2) : '---'}
+          </span>
           <span className="text-[9px] font-black text-slate-900">{unit}</span>
         </div>
       </div>

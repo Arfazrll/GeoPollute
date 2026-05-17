@@ -19,7 +19,7 @@ export const COLORS = {
   GOOD: '#22C55E',
   MODERATE: '#EAB308',
   UNHEALTHY: '#EF4444',
-  NO_DATA: '#94A3B8', // Neutral Slate
+  NO_DATA: '#94A3B8', 
 };
 export const getPollutantCategory = (value: number, type: 'pm25' | 'co' | 'no2'): string => {
   if (value <= 0) return 'NO_DATA';
@@ -28,9 +28,36 @@ export const getPollutantCategory = (value: number, type: 'pm25' | 'co' | 'no2')
   if (value <= threshold.moderate) return 'MODERATE';
   return 'UNHEALTHY';
 };
+const parseHex = (hex: string) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return [r, g, b];
+};
+const interpolateRgb = (color1: string, color2: string, factor: number) => {
+  const c1 = parseHex(color1);
+  const c2 = parseHex(color2);
+  const r = Math.round(c1[0] + factor * (c2[0] - c1[0]));
+  const g = Math.round(c1[1] + factor * (c2[1] - c1[1]));
+  const b = Math.round(c1[2] + factor * (c2[2] - c1[2]));
+  return `rgb(${r}, ${g}, ${b})`;
+};
 export const getPollutantColor = (value: number, type: 'pm25' | 'co' | 'no2' = 'pm25'): string => {
-  const category = getPollutantCategory(value, type);
-  return COLORS[category as keyof typeof COLORS] || COLORS.NO_DATA;
+  if (value <= 0) return COLORS.NO_DATA;
+  const t = POLLUTANT_THRESHOLDS[type];
+  const w1 = t.good * 0.2;
+  const w2 = (t.moderate - t.good) * 0.2;
+  if (value <= t.good - w1) return COLORS.GOOD;
+  if (value > t.good - w1 && value <= t.good + w1) {
+    const factor = (value - (t.good - w1)) / (2 * w1);
+    return interpolateRgb(COLORS.GOOD, COLORS.MODERATE, factor);
+  }
+  if (value > t.good + w1 && value <= t.moderate - w2) return COLORS.MODERATE;
+  if (value > t.moderate - w2 && value <= t.moderate + w2) {
+    const factor = (value - (t.moderate - w2)) / (2 * w2);
+    return interpolateRgb(COLORS.MODERATE, COLORS.UNHEALTHY, factor);
+  }
+  return COLORS.UNHEALTHY;
 };
 export const AQI_CATEGORY = (pm25: number): string => {
   return getPollutantCategory(pm25, 'pm25');
@@ -62,7 +89,7 @@ export const FOCUS_STYLES = {
     strokeOpacity: 0.8,
   }
 };
-export const TILE_URL = 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png';
+export const TILE_URL = import.meta.env.VITE_TILE_URL as string;
 export const TILE_SUBDOMAINS = 'abc';
 export const TILE_ATTRIBUTION = ' ';
 export function pm25ToColor(value: number): string {

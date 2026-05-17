@@ -1,34 +1,44 @@
 import type { FilterMode, PollutantResponse, SensorReading } from '@/types';
 import { STATIC_SENSORS } from '@/constants/sensors';
-
-const URL_V2_HOURLY = 'https://api-gateway.langit-biru.com/api/v1/datavsnew/average/hourly';
-const URL_V2_DAILY = 'https://api-gateway.langit-biru.com/api/v1/datavsnew/average/daily';
-const URL_V1_HOURLY = 'https://api-gateway.langit-biru.com/api/v1/datavs/average/hourly';
-const URL_V1_DAILY = 'https://api-gateway.langit-biru.com/api/v1/datavs/average/daily';
-
+const URL_V2_HOURLY = import.meta.env.VITE_API_URL_V2_HOURLY as string;
+const URL_V2_DAILY = import.meta.env.VITE_API_URL_V2_DAILY as string;
+const URL_V1_HOURLY = import.meta.env.VITE_API_URL_V1_HOURLY as string;
+const URL_V1_DAILY = import.meta.env.VITE_API_URL_V1_DAILY as string;
+const SAFETY_LIMITS = {
+  pm25: { min: 0, max: 500 },
+  co: { min: 0, max: 5000 },
+  no2: { min: 0, max: 500 }
+};
+function clamp(value: number, type: keyof typeof SAFETY_LIMITS): number {
+  if (value < 0) return value; 
+  const { min, max } = SAFETY_LIMITS[type];
+  return Math.min(Math.max(value, min), max);
+}
 interface ExternalApiResponse {
   data: {
     results: {
+      device_id?: string;
+      id?: string;
+      uuid?: string;
+      name?: string;
       buckets: {
-        avg_pm2_5?: number;
-        avg_co2?: number;
-        avg_co?: number;
-        avg_no2?: number;
-        value?: number;
-        avg_value?: number;
+        avg_pm2_5?: number | null;
+        avg_co2?: number | null;
+        avg_co?: number | null;
+        avg_no2?: number | null;
+        value?: number | null;
+        avg_value?: number | null;
         start: string;
       }[];
     }[];
   };
 }
-
 function formatDate(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
-
 async function fetchSensorData(
   sensor: typeof STATIC_SENSORS[0],
   filter: FilterMode,
@@ -37,103 +47,123 @@ async function fetchSensorData(
 ): Promise<SensorReading | null> {
   const isV2 = sensor.apiVersion === 'v2';
   const idParamKey = isV2 ? 'device_id' : 'device_ids';
-
-  let mode: 'hourly' | 'daily' = filter === '1d' ? 'daily' : 'hourly';
-
-  let startDate = filter === '1d' ? dates.startOfMonth : dates.yesterday;
-  let endDate = dates.today;
-
+  let mode = 'hourly';
+  let startDate = '';
+  let endDate = '';
   if (customRange) {
-    startDate = customRange.start.split('T')[0];
-    endDate = customRange.end.split('T')[0];
+    mode = 'hourly';
+    startDate = customRange.start.replace('T', ' ');
+    if (startDate.length === 16) startDate += ':00'; 
+    endDate = customRange.end.replace('T', ' ');
+    if (endDate.length === 16) endDate += ':00';
+  } else if (filter === '1h') {
+    mode = 'hourly';
+    startDate = dates.yesterday; 
+    endDate = dates.today;
+  } else if (filter === '1d') {
     mode = 'daily';
-  } else if (!isV2) {
-
-    endDate = dates.yesterday;
-    if (filter === '1d') {
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      startDate = formatDate(sevenDaysAgo);
-    } else {
-      startDate = dates.yesterday;
-    }
+    startDate = dates.yesterday;
+    endDate = dates.today;
   }
-
   const buildUrl = (s: string, e: string) => {
     const base = isV2
       ? (mode === 'daily' ? URL_V2_DAILY : URL_V2_HOURLY)
       : (mode === 'daily' ? URL_V1_DAILY : URL_V1_HOURLY);
-    return `${base}?start=${s}&end=${e}&${idParamKey}=${sensor.uuid}`;
+    try {
+      const url = new URL(base);
+      url.searchParams.set('start', s);
+      url.searchParams.set('end', e);
+      url.searchParams.set(idParamKey, sensor.uuid);
+      return url.toString();
+    } catch (err) {
+      const sep = base.includes('?') ? '&' : '?';
+      return `${base}${sep}start=${encodeURIComponent(s)}&end=${encodeURIComponent(e)}&${idParamKey}=${sensor.uuid}`;
+    }
   };
-
   try {
     let url = buildUrl(startDate, endDate);
     let res = await fetch(url);
-
-    if (!customRange) {
-      if (!res.ok && res.status === 500 && endDate !== dates.yesterday) {
-        endDate = dates.yesterday;
+    if (!res.ok && res.status === 500 && !customRange && filter === '1d') {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        startDate = formatDate(sevenDaysAgo);
         url = buildUrl(startDate, endDate);
         res = await fetch(url);
-      }
-      if (!res.ok && res.status === 500) {
-        startDate = dates.yesterday;
-        endDate = dates.yesterday;
-        url = buildUrl(startDate, endDate);
-        res = await fetch(url);
-      }
     }
-
     if (!res.ok) return null;
     const result: ExternalApiResponse = await res.json();
-    const buckets = result.data.results[0]?.buckets || [];
+    const targetResult = result.data?.results?.find((r: any) => 
+      r.id === sensor.uuid || 
+      r.device_id === sensor.uuid || 
+      r.uuid === sensor.uuid ||
+      r.name === sensor.id
+    );
+    if (!targetResult) return null;
+    const buckets = targetResult.buckets || [];
     if (buckets.length === 0) return null;
-
-    const history = buckets
-      .map(b => {
-        const val = b.avg_pm2_5 ?? b.avg_value ?? b.value ?? 0;
-        return { value: val, timestamp: b.start.replace(' ', 'T') + 'Z' };
-      })
-      .filter(h => h.value > 0);
-
-    let pm25 = 0, co = 0, no2 = 0;
-
-    if (customRange && buckets.length > 0) {
-      let sumPm25 = 0, sumCo = 0, sumNo2 = 0, count = 0;
+    let pm25 = -1, co = -1, no2 = -1;
+    let finalTimestamp = new Date().toISOString();
+    if (customRange) {
+      let sumPm25 = 0, sumCo = 0, sumNo2 = 0;
+      let countPm25 = 0, countCo = 0, countNo2 = 0;
       buckets.forEach(b => {
         const p = b.avg_pm2_5 ?? b.avg_value ?? b.value;
-        if (p !== undefined && p > 0) {
+        if (p !== undefined && p !== null) {
           sumPm25 += p;
-          sumCo += (b.avg_co ?? b.avg_co2 ?? 0);
-          sumNo2 += (b.avg_no2 ?? 0);
-          count++;
+          countPm25++;
+        }
+        const c = b.avg_co2 ?? b.avg_co; 
+        if (c !== undefined && c !== null) {
+          sumCo += c;
+          countCo++;
+        }
+        const n = b.avg_no2;
+        if (n !== undefined && n !== null) {
+          sumNo2 += n;
+          countNo2++;
         }
       });
-      if (count > 0) {
-        pm25 = sumPm25 / count;
-        co = sumCo / count;
-        no2 = sumNo2 / count;
+      if (countPm25 > 0) pm25 = sumPm25 / countPm25;
+      if (countCo > 0) co = sumCo / countCo;
+      if (countNo2 > 0) no2 = sumNo2 / countNo2;
+      if (buckets.length > 0) {
+        finalTimestamp = buckets[buckets.length - 1].start.replace(' ', 'T') + '+07:00';
       }
     } else {
+      let validBucketFound = false;
       for (let i = buckets.length - 1; i >= 0; i--) {
         const b = buckets[i];
-        if (b.avg_pm2_5 !== undefined || b.avg_value !== undefined || b.value !== undefined) {
-          pm25 = b.avg_pm2_5 ?? b.avg_value ?? b.value ?? 0;
-          co = b.avg_co ?? b.avg_co2 ?? 0;
-          no2 = b.avg_no2 ?? 0;
-          if (pm25 > 0) break;
+        const p = b.avg_pm2_5 ?? b.avg_value ?? b.value;
+        const c = b.avg_co2 ?? b.avg_co;
+        const n = b.avg_no2;
+        if ((p !== undefined && p !== null) || (c !== undefined && c !== null) || (n !== undefined && n !== null)) {
+          pm25 = p !== undefined && p !== null ? p : -1;
+          co = c !== undefined && c !== null ? c : -1;
+          no2 = n !== undefined && n !== null ? n : -1;
+          finalTimestamp = b.start.replace(' ', 'T') + '+07:00'; 
+          validBucketFound = true;
+          break; 
         }
       }
+      if (!validBucketFound) return null; 
     }
-
+    const history = buckets
+      .map(b => {
+        const val = b.avg_pm2_5 ?? b.avg_value ?? b.value;
+        return { 
+          value: val !== undefined && val !== null ? clamp(val, 'pm25') : -1, 
+          timestamp: b.start.replace(' ', 'T') + '+07:00' 
+        };
+      })
+      .filter(h => h.value >= 0);
     return {
       id: sensor.id,
       lat: sensor.latitude,
       lng: sensor.longitude,
-      pm25,
-      co,
-      no2,
-      timestamp: new Date().toISOString(),
+      pm25: clamp(pm25, 'pm25'),
+      co: clamp(co, 'co'),
+      no2: clamp(no2, 'no2'),
+      timestamp: finalTimestamp,
       history
     };
   } catch (error) {
@@ -141,7 +171,6 @@ async function fetchSensorData(
     return null;
   }
 }
-
 export async function fetchPollutantData(
   filter: FilterMode,
   customRange?: { start: string, end: string } | null
@@ -154,11 +183,9 @@ export async function fetchPollutantData(
   const startOfMonthDate = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfMonth = formatDate(startOfMonthDate);
   const dates = { today, yesterday, startOfMonth };
-
   const results = await Promise.all(
     STATIC_SENSORS.map(sensor => fetchSensorData(sensor, filter, dates, customRange))
   );
-
   const data = results.filter((r): r is SensorReading => r !== null);
   return { filter, data };
 }
