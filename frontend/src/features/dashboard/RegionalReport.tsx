@@ -1,6 +1,6 @@
 import { DEVICES_INFO } from '@/constants/devices';
-import { FileText, ChevronRight, Calendar } from 'lucide-react';
-import { useMemo, useState, useRef } from 'react';
+import { FileText } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { COLORS } from '@/features/map/utils/spatialLogic';
 import type { PollutantType } from '@/types';
 import { usePollutantData } from '@/features/map/hooks/usePollutantData';
@@ -151,20 +151,6 @@ export function RegionalReport() {
     </button>
   );
 
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const startInputRef = useRef<HTMLInputElement>(null);
-  const endInputRef = useRef<HTMLInputElement>(null);
-
-  const handleIconClick = (ref: React.RefObject<HTMLInputElement | null>) => {
-    if (ref.current) {
-      try {
-        (ref.current as any).showPicker();
-      } catch (e) {
-        ref.current.focus();
-      }
-    }
-  };
 
   return (
     <div className="mt-6 pt-6 border-t border-slate-200">
@@ -187,7 +173,7 @@ export function RegionalReport() {
             </div>
           </div>
         </div>
-      </div>
+      </button>
 
       {isExpanded && (
         <div className="mt-4 flex flex-col h-[700px]">
@@ -202,8 +188,7 @@ export function RegionalReport() {
             <NoDataPlaceholder />
           )}
         </div>
-        <RegionalReportContent activeType={activeType} start={startDate} end={endDate} />
-      </div>
+      )}
     </div>
   );
 }

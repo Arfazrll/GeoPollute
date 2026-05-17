@@ -54,7 +54,7 @@ export declare const FOCUS_STYLES: {
         strokeOpacity: number;
     };
 };
-export declare const TILE_URL: any;
+export declare const TILE_URL: string;
 export declare const TILE_SUBDOMAINS = "abc";
 export declare const TILE_ATTRIBUTION = " ";
 export declare function pm25ToColor(value: number): string;
