@@ -1,13 +1,17 @@
-# GeoPollute
+<h1 align="center">GeoPollute</h1>
 
-[![Go Version](https://img.shields.io/github/go-mod/go-version/arfazrll/geopollute?filename=api%2Fgo.mod&style=flat-square&color=00ADD8&logo=go)](https://go.dev/)
-[![React](https://img.shields.io/badge/Frontend-React%20%26%20TypeScript-61DAFB?style=flat-square&logo=react)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Build%20Tool-Vite-646CFF?style=flat-square&logo=vite)](https://vite.dev/)
-[![Docker](https://img.shields.io/badge/Container-Docker%20Compose-2496ED?style=flat-square&logo=docker)](https://www.docker.com/)
-[![Traefik](https://img.shields.io/badge/Proxy-Traefik%20v3-F1462F?style=flat-square&logo=traefik)](https://traefik.io/)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+<p align="center">
+  <a href="https://go.dev/"><img src="https://img.shields.io/github/go-mod/go-version/arfazrll/geopollute?filename=api%2Fgo.mod&style=flat-square&color=00ADD8&logo=go" alt="Go Version"/></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/Frontend-React%20%26%20TypeScript-61DAFB?style=flat-square&logo=react" alt="React"/></a>
+  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Build%20Tool-Vite-646CFF?style=flat-square&logo=vite" alt="Vite"/></a>
+  <a href="https://www.docker.com/"><img src="https://img.shields.io/badge/Container-Docker%20Compose-2496ED?style=flat-square&logo=docker" alt="Docker"/></a>
+  <a href="https://traefik.io/"><img src="https://img.shields.io/badge/Proxy-Traefik%20v3-F1462F?style=flat-square&logo=traefik" alt="Traefik"/></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License"/></a>
+</p>
 
-GeoPollute is a production-grade, high-performance spatial pollution monitoring platform for Jakarta. It aggregates real-time environmental IoT data from 24 low-cost monitoring stations (LCS Clarity and KRE series) and visualizes air quality through high-fidelity spatial interpolation.
+<p align="center">
+  GeoPollute is a production-grade, high-performance spatial pollution monitoring platform for Jakarta. It aggregates real-time environmental IoT data from 24 low-cost monitoring stations (LCS Clarity and KRE series) and visualizes air quality through high-fidelity spatial interpolation.
+</p>
 
 ---
 
