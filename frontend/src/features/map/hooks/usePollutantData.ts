@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { fetchPollutantData } from '@/api/pollutant';
 import { useFilterStore } from '@/store/useFilterStore';
 import { POLLING_INTERVAL_MS } from '@/features/map/utils/spatialLogic';
-export function usePollutantData(overrideFilter?: string) {
+export function usePollutantData(overrideFilter?: string, start?: string, end?: string) {
   const globalFilter = useFilterStore((s) => s.filter);
   const globalCustomRange = useFilterStore((s) => s.customRange);
   const filter = overrideFilter || globalFilter;

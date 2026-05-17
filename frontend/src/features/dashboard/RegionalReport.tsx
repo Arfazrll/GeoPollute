@@ -1,6 +1,6 @@
 import { DEVICES_INFO } from '@/constants/devices';
-import { FileText, ChevronRight } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { FileText, ChevronRight, Calendar } from 'lucide-react';
+import { useMemo, useState, useRef } from 'react';
 import { COLORS } from '@/features/map/utils/spatialLogic';
 import type { PollutantType } from '@/types';
 import { usePollutantData } from '@/features/map/hooks/usePollutantData';
@@ -83,7 +83,7 @@ function RegionalReportContent({ activeType }: { activeType: PollutantType }) {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-8 space-y-6">
+    <div className="flex flex-col pr-2 pb-8 space-y-6">
       {report.map((region, i) => (
         <div key={i} className="flex flex-col gap-4">
           <div className="flex items-center gap-2 sticky top-0 bg-white/90 backdrop-blur-md py-2 z-10">
@@ -151,6 +151,21 @@ export function RegionalReport() {
     </button>
   );
 
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const startInputRef = useRef<HTMLInputElement>(null);
+  const endInputRef = useRef<HTMLInputElement>(null);
+
+  const handleIconClick = (ref: React.RefObject<HTMLInputElement | null>) => {
+    if (ref.current) {
+      try {
+        (ref.current as any).showPicker();
+      } catch (e) {
+        ref.current.focus();
+      }
+    }
+  };
+
   return (
     <div className="mt-6 pt-6 border-t border-slate-200">
       <button
@@ -172,8 +187,7 @@ export function RegionalReport() {
             </div>
           </div>
         </div>
-        <ChevronRight className={`w-5 h-5 text-slate-400 transition-transform ${isExpanded ? 'rotate-90 text-blue-600' : ''}`} />
-      </button>
+      </div>
 
       {isExpanded && (
         <div className="mt-4 flex flex-col h-[700px]">
@@ -188,7 +202,8 @@ export function RegionalReport() {
             <NoDataPlaceholder />
           )}
         </div>
-      )}
+        <RegionalReportContent activeType={activeType} start={startDate} end={endDate} />
+      </div>
     </div>
   );
 }

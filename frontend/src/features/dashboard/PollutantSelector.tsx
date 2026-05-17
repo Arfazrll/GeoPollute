@@ -12,11 +12,10 @@ export function PollutantSelector() {
         <button
           key={p.id}
           onClick={() => setPollutant(p.id)}
-          className={`text-[11px] font-bold tracking-[0.15em] transition-all duration-300 relative pb-1 ${
-            pollutant === p.id
+          className={`text-[11px] font-bold tracking-[0.15em] transition-all duration-300 relative pb-1 ${pollutant === p.id
               ? 'text-blue-600 opacity-100'
               : 'text-slate-400 hover:text-slate-600'
-          }`}
+            }`}
         >
           {p.label}
           {pollutant === p.id && (
