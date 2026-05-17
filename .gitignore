@@ -35,10 +35,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # --- Editor & OS ---
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
-!.vscode/launch.json
+.vscode/
 .history/
 .vscode-test/
 .idea/
